@@ -4,6 +4,13 @@ Predicting the probability that a mammographic mass is malignant, as a decision-
 
 *Midterm project for [ML Zoomcamp](https://github.com/DataTalksClub/machine-learning-zoomcamp) (DataTalks.Club).*
 
+## Summary
+
+- **Task:** binary classification, benign (0) vs. malignant (1).
+- **Data:** [UCI Mammographic Mass](https://archive.ics.uci.edu/dataset/161/mammographic+mass), 961 cases, committed in this repository.
+- **Final model:** logistic regression (`C=0.1`), selected with 5-fold cross-validation (mean ROC AUC 0.8746). Test ROC AUC: 0.8438.
+- **Service:** FastAPI app (`predict.py`) that returns a malignancy probability, packaged with Docker.
+
 ## Problem Description
 
 When a mass is found on a mammogram, the radiologist must decide whether
@@ -35,7 +42,8 @@ clinical decision-making, and no decision threshold is built into it.
 | `severity` | **Target** | benign=0, malignant=1 |
 
 The data is committed in this repository (`data/mammographic_mass.csv`).
-It can also be re-downloaded with `src/download_data.py` (see below).
+It can also be re-downloaded with `src/download_data.py` (see step 2 of
+[How to Run](#how-to-run)).
 
 ### Why BI-RADS is excluded
 
@@ -62,6 +70,7 @@ the training portion only (768 cases, before the validation split).
 ### Missing values
 
 Missing values are kept, not dropped:
+
 - `age` is filled with the median of the training split (57.0).
 - `shape`, `margin` and `density` get their own category, `unknown`.
 
@@ -93,6 +102,7 @@ held-out test set (193 cases): **ROC AUC = 0.8438**.
 
 ```
 ├── data/mammographic_mass.csv   # dataset
+├── images/service.png           # screenshot of the running service
 ├── src/download_data.py         # downloads the dataset from UCI
 ├── notebook.ipynb               # EDA, model comparison and tuning
 ├── train.py                     # trains the final model, saves model.bin
@@ -117,7 +127,7 @@ python -m venv .venv
 python -m pip install -r requirements.txt
 ```
 
-On macOS/Linux:
+The equivalent commands on macOS/Linux (not tested by the author):
 
 ```bash
 python3 -m venv .venv
@@ -152,7 +162,9 @@ Then open `notebook.ipynb`.
 python train.py
 ```
 
-This prints the test ROC AUC and saves `model.bin`.
+This prints the test ROC AUC and saves `model.bin`. The data split uses a
+fixed `random_state=1`, so the script reproduces the reported test ROC AUC
+of 0.8438.
 
 ### 5. Run the service locally
 
@@ -166,6 +178,11 @@ terminal (with the environment activated):
 ```powershell
 python test.py
 ```
+
+`test.py` sends four example requests (a low-risk pattern, a high-risk
+pattern, a high-risk shape in a young patient, and a case with missing
+values) and prints the returned probabilities. These are examples to check
+that the service behaves sensibly, not evaluation results.
 
 Example request (any field may be omitted; missing values are handled as in training):
 
@@ -191,9 +208,10 @@ docker run -p 9696:9696 mammographic-mass
 ```
 
 The service is then available on port 9696, exactly as in the local run
-(`python test.py` works unchanged). The image installs only the dependencies
-in `requirements-docker.txt` and copies `predict.py` and `model.bin`.
-Tested with Docker Desktop on Windows.
+(`python test.py` works unchanged, and the interactive docs are at
+<http://localhost:9696/docs>). Stop the container with `Ctrl+C`. The image
+installs only the dependencies in `requirements-docker.txt` and copies
+`predict.py` and `model.bin`. Tested with Docker Desktop on Windows.
 
 ## Limitations
 
@@ -207,11 +225,12 @@ Tested with Docker Desktop on Windows.
   choice of a decision threshold were not studied.
 - `BI-RADS` is excluded on purpose (see above), which makes the task
   harder but avoids leakage.
-- The model is linear in age, so ages outside the range seen in training (about 19–96 years) are extrapolated and should not be trusted.  
+- The model is linear in age, so ages outside the range seen in training
+  (about 19–96 years) are extrapolated and should not be trusted.
 
 ## Cloud deployment
 
-Not done (optional in the course).
+Not done 
 
 ## Data source and license
 
